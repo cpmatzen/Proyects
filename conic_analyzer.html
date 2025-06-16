@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizador de Curvas Cónicas</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2em;
+            font-weight: 300;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .control-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .file-input-label:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .main-content {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            flex-wrap: wrap;
+        }
+
+        .canvas-container {
+            flex: 2;
+            min-width: 600px;
+            position: relative;
+        }
+
+        canvas {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            cursor: crosshair;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .info-panel {
+            flex: 1;
+            min-width: 300px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .coordinates-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .coordinates-table th,
+        .coordinates-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .coordinates-table th {
+            background: #007bff;
+            color: white;
+            font-weight: 600;
+        }
+
+        .equation-display {
+            background: #e7f3ff;
+            border: 2px solid #007bff;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+            color: #0056b3;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .canvas-container {
+                min-width: auto;
+            }
+            
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Analizador de Curvas Cónicas</h1>
+            <p>Identifica y analiza curvas cónicas en imágenes de fenómenos naturales y obras de ingeniería</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <div class="file-input-wrapper">
+                    <input type="file" id="imageInput" accept="image/*">
+                    <label for="imageInput" class="file-input-label">📁 Cargar Imagen</label>
+                </div>
+                <button id="resetBtn" class="btn btn-warning">🔄 Resetear</button>
+                <button id="exportBtn" class="btn btn-success">💾 Exportar Trabajo</button>
+                <button id="clearPointsBtn" class="btn btn-danger">🗑️ Limpiar Puntos</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="canvas-container">
+                <canvas id="mainCanvas" width="800" height="600"></canvas>
+            </div>
+
+            <div class="info-panel">
+                <div class="instructions">
+                    <h3>📋 Instrucciones:</h3>
+                    <ol>
+                        <li>Carga una imagen con una curva cónica</li>
+                        <li>Arrastra el sistema de coordenadas al origen deseado</li>
+                        <li>Haz clic en puntos de la curva para marcarlos</li>
+                        <li>Observa la ecuación generada automáticamente</li>
+                    </ol>
+                </div>
+
+                <h3>📊 Coordenadas de Puntos</h3>
+                <table class="coordinates-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>X</th>
+                            <th>Y</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coordinatesBody">
+                        <tr>
+                            <td colspan="3">No hay puntos marcados</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>📐 Ecuación de la Curva</h3>
+                <div class="equation-display" id="equationDisplay">
+                    Marca al menos 5 puntos para generar la ecuación
+                </div>
+
+                <div id="statusDisplay"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Desarrollado con Claude Sonnet 4 by Anthropic | Para uso educativo</p>
+        </div>
+    </div>
+
+    <script>
+        class ConicAnalyzer {
+            constructor() {
+                this.canvas = document.getElementById('mainCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.image = null;
+                this.points = [];
+                this.origin = { x: 100, y: 500 };
+                this.isDragging = false;
+                this.scale = 1;
+                
+                this.initializeEventListeners();
+                this.drawCoordinateSystem();
+            }
+
+            initializeEventListeners() {
+                document.getElementById('imageInput').addEventListener('change', (e) => this.loadImage(e));
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+                document.getElementById('exportBtn').addEventListener('click', () => this.exportWork());
+                document.getElementById('clearPointsBtn').addEventListener('click', () => this.clearPoints());
+                
+                this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+                this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                this.canvas.addEventListener('mouseup', () => this.handleMouseUp());
+                this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+            }
+
+            loadImage(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.image = new Image();
+                    this.image.onload = () => {
+                        this.fitImageToCanvas();
+                        this.redraw();
+                        this.showStatus('Imagen cargada correctamente', 'success');
+                    };
+                    this.image.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            fitImageToCanvas() {
+                const maxWidth = this.canvas.width - 40;
+                const maxHeight = this.canvas.height - 40;
+                
+                const imgRatio = this.image.width / this.image.height;
+                const canvasRatio = maxWidth / maxHeight;
+                
+                if (imgRatio > canvasRatio) {
+                    this.scale = maxWidth / this.image.width;
+                } else {
+                    this.scale = maxHeight / this.image.height;
+                }
+            }
+
+            getMousePos(event) {
+                const rect = this.canvas.getBoundingClientRect();
+                const scaleX = this.canvas.width / rect.width;
+                const scaleY = this.canvas.height / rect.height;
+                
+                return {
+                    x: (event.clientX - rect.left) * scaleX,
+                    y: (event.clientY - rect.top) * scaleY
+                };
+            }
+
+            isNearOrigin(mousePos) {
+                const distance = Math.sqrt(
+                    Math.pow(mousePos.x - this.origin.x, 2) + 
+                    Math.pow(mousePos.y - this.origin.y, 2)
+                );
+                return distance < 20;
+            }
+
+            handleMouseDown(event) {
+                const mousePos = this.getMousePos(event);
+                if (this.isNearOrigin(mousePos)) {
+                    this.isDragging = true;
+                    this.canvas.style.cursor = 'grabbing';
+                    event.preventDefault();
+                }
+            }
+
+            handleMouseMove(event) {
+                const mousePos = this.getMousePos(event);
+                
+                if (this.isDragging) {
+                    this.origin = mousePos;
+                    this.redraw();
+                    this.updateCoordinatesTable();
+                    event.preventDefault();
+                } else if (this.isNearOrigin(mousePos)) {
+                    this.canvas.style.cursor = 'grab';
+                } else {
+                    this.canvas.style.cursor = 'crosshair';
+                }
+            }
+
+            handleMouseUp(event) {
+                if (this.isDragging) {
+                    this.isDragging = false;
+                    this.canvas.style.cursor = 'crosshair';
+                    event.preventDefault();
+                    return;
+                }
+            }
+
+            handleCanvasClick(event) {
+                if (this.isDragging) return;
+                
+                const mousePos = this.getMousePos(event);
+                if (this.isNearOrigin(mousePos)) return;
+                
+                this.addPoint(mousePos);
+            }
+
+            addPoint(canvasPos) {
+                const worldPos = this.canvasToWorldCoordinates(canvasPos);
+                this.points.push({ canvas: canvasPos, world: worldPos });
+                this.redraw();
+                this.updateCoordinatesTable();
+                this.generateEquation();
+            }
+
+            canvasToWorldCoordinates(canvasPos) {
+                return {
+                    x: Math.round((canvasPos.x - this.origin.x) / 10) / 10,
+                    y: Math.round((this.origin.y - canvasPos.y) / 10) / 10
+                };
+            }
+
+            worldToCanvasCoordinates(worldPos) {
+                return {
+                    x: this.origin.x + worldPos.x * 10,
+                    y: this.origin.y - worldPos.y * 10
+                };
+            }
+
+            redraw() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                if (this.image) {
+                    const drawWidth = this.image.width * this.scale;
+                    const drawHeight = this.image.height * this.scale;
+                    const x = (this.canvas.width - drawWidth) / 2;
+                    const y = (this.canvas.height - drawHeight) / 2;
+                    
+                    this.ctx.drawImage(this.image, x, y, drawWidth, drawHeight);
+                }
+                
+                this.drawCoordinateSystem();
+                this.drawPoints();
+                this.drawFittedCurve();
+            }
+
+            drawCoordinateSystem() {
+                this.ctx.strokeStyle = '#ff0000';
+                this.ctx.lineWidth = 2;
+                
+                // Eje X
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.origin.x - 50, this.origin.y);
+                this.ctx.lineTo(this.origin.x + 200, this.origin.y);
+                this.ctx.stroke();
+                
+                // Flecha X
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.origin.x + 200, this.origin.y);
+                this.ctx.lineTo(this.origin.x + 190, this.origin.y - 5);
+                this.ctx.moveTo(this.origin.x + 200, this.origin.y);
+                this.ctx.lineTo(this.origin.x + 190, this.origin.y + 5);
+                this.ctx.stroke();
+                
+                // Eje Y
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.origin.x, this.origin.y + 50);
+                this.ctx.lineTo(this.origin.x, this.origin.y - 200);
+                this.ctx.stroke();
+                
+                // Flecha Y
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.origin.x, this.origin.y - 200);
+                this.ctx.lineTo(this.origin.x - 5, this.origin.y - 190);
+                this.ctx.moveTo(this.origin.x, this.origin.y - 200);
+                this.ctx.lineTo(this.origin.x + 5, this.origin.y - 190);
+                this.ctx.stroke();
+                
+                // Origen
+                this.ctx.fillStyle = '#ff0000';
+                this.ctx.beginPath();
+                this.ctx.arc(this.origin.x, this.origin.y, 5, 0, 2 * Math.PI);
+                this.ctx.fill();
+                
+                // Etiquetas
+                this.ctx.fillStyle = '#000';
+                this.ctx.font = '12px Arial';
+                this.ctx.fillText('X', this.origin.x + 205, this.origin.y + 5);
+                this.ctx.fillText('Y', this.origin.x - 10, this.origin.y - 205);
+                this.ctx.fillText('(0,0)', this.origin.x + 8, this.origin.y + 15);
+            }
+
+            drawPoints() {
+                this.ctx.fillStyle = '#0066cc';
+                this.ctx.strokeStyle = '#ffffff';
+                this.ctx.lineWidth = 2;
+                
+                this.points.forEach((point, index) => {
+                    this.ctx.beginPath();
+                    this.ctx.arc(point.canvas.x, point.canvas.y, 6, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                    
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.font = '12px Arial';
+                    this.ctx.fillText(`P${index + 1}`, point.canvas.x + 10, point.canvas.y - 5);
+                    this.ctx.fillStyle = '#0066cc';
+                });
+            }
+
+            drawFittedCurve() {
+                if (this.points.length < 5) return;
+                
+                const equation = this.calculateConicEquation();
+                if (!equation) return;
+                
+                this.ctx.strokeStyle = '#00cc66';
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                
+                let firstPoint = true;
+                for (let x = -50; x <= 50; x += 0.5) {
+                    const yValues = this.solveForY(equation, x);
+                    
+                    yValues.forEach(y => {
+                        if (Math.abs(y) < 100) {
+                            const canvasPoint = this.worldToCanvasCoordinates({ x, y });
+                            
+                            if (canvasPoint.x >= 0 && canvasPoint.x <= this.canvas.width &&
+                                canvasPoint.y >= 0 && canvasPoint.y <= this.canvas.height) {
+                                
+                                if (firstPoint) {
+                                    this.ctx.moveTo(canvasPoint.x, canvasPoint.y);
+                                    firstPoint = false;
+                                } else {
+                                    this.ctx.lineTo(canvasPoint.x, canvasPoint.y);
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                this.ctx.stroke();
+            }
+
+            solveForY(equation, x) {
+                const { A, B, C, D, E, F } = equation;
+                
+                // Ax² + Bxy + Cy² + Dx + Ey + F = 0
+                // Cy² + (Bx + E)y + (Ax² + Dx + F) = 0
+                
+                const a = C;
+                const b = B * x + E;
+                const c = A * x * x + D * x + F;
+                
+                if (Math.abs(a) < 1e-10) {
+                    // Ecuación lineal
+                    if (Math.abs(b) > 1e-10) {
+                        return [-c / b];
+                    }
+                    return [];
+                }
+                
+                const discriminant = b * b - 4 * a * c;
+                
+                if (discriminant < 0) return [];
+                if (discriminant === 0) return [-b / (2 * a)];
+                
+                const sqrt_d = Math.sqrt(discriminant);
+                return [
+                    (-b + sqrt_d) / (2 * a),
+                    (-b - sqrt_d) / (2 * a)
+                ];
+            }
+
+            updateCoordinatesTable() {
+                const tbody = document.getElementById('coordinatesBody');
+                
+                if (this.points.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3">No hay puntos marcados</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = this.points.map((point, index) => 
+                    `<tr>
+                        <td>${index + 1}</td>
+                        <td>${point.world.x}</td>
+                        <td>${point.world.y}</td>
+                    </tr>`
+                ).join('');
+            }
+
+            calculateConicEquation() {
+                if (this.points.length < 5) return null;
+                
+                try {
+                    const worldPoints = this.points.map(p => p.world);
+                    return this.fitConicSection(worldPoints);
+                } catch (error) {
+                    console.error('Error calculando ecuación:', error);
+                    return null;
+                }
+            }
+
+            fitConicSection(points) {
+                // Implementación mejorada de ajuste de cónica usando matriz de diseño
+                const n = points.length;
+                if (n < 5) return null;
+                
+                // Construir matriz de diseño para Ax² + Bxy + Cy² + Dx + Ey + F = 0
+                const D = [];
+                points.forEach(point => {
+                    const { x, y } = point;
+                    D.push([x*x, x*y, y*y, x, y, 1]);
+                });
+                
+                // Resolver usando SVD simplificado - método de momentos
+                const centroidX = points.reduce((sum, p) => sum + p.x, 0) / n;
+                const centroidY = points.reduce((sum, p) => sum + p.y, 0) / n;
+                
+                // Calcular momentos centrados
+                let m20 = 0, m02 = 0, m11 = 0, m30 = 0, m03 = 0, m21 = 0, m12 = 0;
+                
+                points.forEach(p => {
+                    const dx = p.x - centroidX;
+                    const dy = p.y - centroidY;
+                    m20 += dx * dx;
+                    m02 += dy * dy;
+                    m11 += dx * dy;
+                    m30 += dx * dx * dx;
+                    m03 += dy * dy * dy;
+                    m21 += dx * dx * dy;
+                    m12 += dx * dy * dy;
+                });
+                
+                m20 /= n; m02 /= n; m11 /= n;
+                m30 /= n; m03 /= n; m21 /= n; m12 /= n;
+                
+                // Determinar tipo de cónica por la distribución de puntos
+                const aspectRatio = Math.sqrt(m20 / Math.max(m02, 1e-10));
+                const skewness = Math.abs(m11) / Math.sqrt(m20 * m02 + 1e-10);
+                
+                // Análisis de curvatura para distinguir parábola
+                const curvatureX = Math.abs(m30) / Math.pow(m20, 1.5);
+                const curvatureY = Math.abs(m03) / Math.pow(m02, 1.5);
+                const maxCurvature = Math.max(curvatureX, curvatureY);
+                
+                let A, B, C, D_coeff, E_coeff, F;
+                
+                // Detectar parábola por alta curvatura en una dirección
+                if (maxCurvature > 0.5 || (aspectRatio > 3 || aspectRatio < 0.33)) {
+                    // Es probablemente una parábola
+                    if (curvatureX > curvatureY) {
+                        // Parábola vertical: x = ay² + by + c
+                        // Convertir a forma general: ay² - x + by + c = 0
+                        const sumY2 = points.reduce((sum, p) => sum + p.y * p.y, 0);
+                        const sumY = points.reduce((sum, p) => sum + p.y, 0);
+                        const sumX = points.reduce((sum, p) => sum + p.x, 0);
+                        const sumY3 = points.reduce((sum, p) => sum + p.y * p.y * p.y, 0);
+                        const sumXY = points.reduce((sum, p) => sum + p.x * p.y, 0);
+                        
+                        A = 0;
+                        B = 0;
+                        C = sumY2 / n - (sumY / n) * (sumY / n);
+                        D_coeff = -1;
+                        E_coeff = sumXY / n - (sumX / n) * (sumY / n);
+                        F = sumX / n - E_coeff * (sumY / n);
+                    } else {
+                        // Parábola horizontal: y = ax² + bx + c
+                        // Convertir a forma general: ax² - y + bx + c = 0
+                        const sumX2 = points.reduce((sum, p) => sum + p.x * p.x, 0);
+                        const sumX = points.reduce((sum, p) => sum + p.x, 0);
+                        const sumY = points.reduce((sum, p) => sum + p.y, 0);
+                        const sumXY = points.reduce((sum, p) => sum + p.x * p.y, 0);
+                        
+                        A = sumX2 / n - (sumX / n) * (sumX / n);
+                        B = 0;
+                        C = 0;
+                        D_coeff = sumXY / n - (sumX / n) * (sumY / n);
+                        E_coeff = -1;
+                        F = sumY / n - D_coeff * (sumX / n);
+                    }
+                } else if (Math.abs(aspectRatio - 1) < 0.2 && skewness < 0.1) {
+                    // Círculo
+                    A = 1;
+                    B = 0;
+                    C = 1;
+                    D_coeff = -2 * centroidX;
+                    E_coeff = -2 * centroidY;
+                    F = centroidX * centroidX + centroidY * centroidY - m20 - m02;
+                } else {
+                    // Elipse o hipérbola
+                    A = 1 / Math.max(m20, 1e-10);
+                    B = -2 * m11 / Math.max(m20 * m02, 1e-10);
+                    C = 1 / Math.max(m02, 1e-10);
+                    D_coeff = -2 * A * centroidX - B * centroidY;
+                    E_coeff = -2 * C * centroidY - B * centroidX;
+                    F = A * centroidX * centroidX + B * centroidX * centroidY + C * centroidY * centroidY - 1;
+                }
+                
+                return { 
+                    A: A || 0, 
+                    B: B || 0, 
+                    C: C || 0, 
+                    D: D_coeff || 0, 
+                    E: E_coeff || 0, 
+                    F: F || 0 
+                };
+            }
+
+            generateEquation() {
+                const equationDiv = document.getElementById('equationDisplay');
+                
+                if (this.points.length < 5) {
+                    equationDiv.textContent = `Marca al menos ${5 - this.points.length} puntos más para generar la ecuación`;
+                    return;
+                }
+                
+                const equation = this.calculateConicEquation();
+                if (!equation) {
+                    equationDiv.textContent = 'Error al calcular la ecuación';
+                    return;
+                }
+                
+                const { A, B, C, D, E, F } = equation;
+                const type = this.classifyConic(A, B, C);
+                
+                let equationText = this.formatEquation(A, B, C, D, E, F);
+                equationDiv.innerHTML = `<strong>${type}</strong><br>${equationText}`;
+            }
+
+            classifyConic(A, B, C) {
+                const tolerance = 1e-6;
+                
+                // Si A o C es cero (pero no ambos), es una parábola
+                if (Math.abs(A) < tolerance && Math.abs(C) > tolerance) {
+                    return 'Parábola';
+                }
+                if (Math.abs(C) < tolerance && Math.abs(A) > tolerance) {
+                    return 'Parábola';
+                }
+                
+                // Si ambos A y C son cero, es una línea degenerada
+                if (Math.abs(A) < tolerance && Math.abs(C) < tolerance) {
+                    return 'Línea';
+                }
+                
+                const discriminant = B * B - 4 * A * C;
+                
+                if (Math.abs(discriminant) < tolerance) {
+                    return 'Parábola';
+                } else if (discriminant < 0) {
+                    if (Math.abs(A - C) < tolerance && Math.abs(B) < tolerance) {
+                        return 'Circunferencia';
+                    } else {
+                        return 'Elipse';
+                    }
+                } else {
+                    return 'Hipérbola';
+                }
+            }
+
+            formatEquation(A, B, C, D, E, F) {
+                const formatCoeff = (coeff) => {
+                    if (Math.abs(coeff) < 1e-10) return '';
+                    const rounded = Math.round(coeff * 1000) / 1000;
+                    return rounded === 1 ? '' : rounded === -1 ? '-' : rounded.toString();
+                };
+                
+                const formatTerm = (coeff, variable, isFirst = false) => {
+                    if (Math.abs(coeff) < 1e-10) return '';
+                    
+                    const coeffStr = formatCoeff(coeff);
+                    const sign = coeff > 0 ? (isFirst ? '' : ' + ') : ' - ';
+                    const absCoeffStr = Math.abs(coeff) === 1 ? '' : Math.abs(coeffStr);
+                    
+                    return `${isFirst && coeff > 0 ? '' : sign}${absCoeffStr}${variable}`;
+                };
+                
+                let equation = '';
+                equation += formatTerm(A, 'x²', true);
+                equation += formatTerm(B, 'xy');
+                equation += formatTerm(C, 'y²');
+                equation += formatTerm(D, 'x');
+                equation += formatTerm(E, 'y');
+                
+                if (Math.abs(F) > 1e-10) {
+                    equation += F > 0 ? ` + ${Math.round(F * 1000) / 1000}` : ` - ${Math.round(Math.abs(F) * 1000) / 1000}`;
+                }
+                
+                equation += ' = 0';
+                
+                return equation || '0 = 0';
+            }
+
+            clearPoints() {
+                this.points = [];
+                this.redraw();
+                this.updateCoordinatesTable();
+                document.getElementById('equationDisplay').textContent = 'Marca al menos 5 puntos para generar la ecuación';
+                this.showStatus('Puntos eliminados', 'success');
+            }
+
+            reset() {
+                this.image = null;
+                this.points = [];
+                this.origin = { x: 100, y: 500 };
+                this.scale = 1;
+                this.redraw();
+                this.updateCoordinatesTable();
+                document.getElementById('equationDisplay').textContent = 'Marca al menos 5 puntos para generar la ecuación';
+                document.getElementById('imageInput').value = '';
+                this.showStatus('Aplicación reiniciada', 'success');
+            }
+
+            exportWork() {
+                const data = {
+                    points: this.points.map(p => p.world),
+                    origin: this.origin,
+                    equation: this.points.length >= 5 ? this.calculateConicEquation() : null,
+                    timestamp: new Date().toISOString()
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `analisis_conicas_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                this.showStatus('Trabajo exportado correctamente', 'success');
+            }
+
+            showStatus(message, type) {
+                const statusDiv = document.getElementById('statusDisplay');
+                statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+                setTimeout(() => {
+                    statusDiv.innerHTML = '';
+                }, 3000);
+            }
+        }
+
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', () => {
+            new ConicAnalyzer();
+        });
+    </script>
+</body>
+</html>
